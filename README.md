@@ -24,6 +24,11 @@ and no tray icon**.
 `PeripheralCompanion.exe` is a **single, self-contained file**. It needs nothing
 installed on the target machine — no .NET runtime, no admin rights.
 
+**Download:** the prebuilt binary is committed at
+[`dist/PeripheralCompanion.exe`](dist/PeripheralCompanion.exe) — use the
+"Download raw file" button on GitHub, or
+`https://github.com/alekpeed/mouse/raw/main/dist/PeripheralCompanion.exe`.
+
 **Use it:**
 
 1. Copy `PeripheralCompanion.exe` onto your USB stick.
