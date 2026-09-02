@@ -2,55 +2,65 @@
 
 A portable **mouse jiggler / anti-idle utility for Windows 11** that runs
 directly from a USB stick. It keeps a session marked as active by issuing
-periodic synthetic input, and presents itself as a small system-tray
-peripheral utility.
+periodic synthetic input. It runs quietly in the background with **no window
+and no tray icon**.
 
 > **Authorized use only.** This is a legitimate anti-idle tool. Run it only on
 > machines you own or are explicitly permitted to operate. It does not hide
 > itself from administrators or security software, and it requests no elevated
-> privileges.
+> privileges (`asInvoker`).
 
 ## Two ways to run it
 
 | Option | Build required | Best for |
 | --- | --- | --- |
-| **A. Portable script** (`portable/`) | None | Immediate use — drop on the stick and double-click |
-| **B. Tray app** (`src/`) | .NET 8 SDK, once | A single `.exe` with a tray icon and menu |
+| **A. Compiled `.exe`** (`src/`, prebuilt) | None to run | Drop one file on the stick and double-click |
+| **B. Portable script** (`portable/`) | None | Same behavior with visible on/off control |
 
 ---
 
-## A. Portable script (no build)
+## A. Compiled executable (recommended)
 
-Everything is in `portable/`. Copy that folder to your USB stick.
+`PeripheralCompanion.exe` is a **single, self-contained file**. It needs nothing
+installed on the target machine — no .NET runtime, no admin rights.
 
-- **`Run-Visible.cmd`** — double-click to run in a console window you can watch.
-- **`Run-Hidden.vbs`** — double-click to run quietly with no window. Stop it by
-  ending the `powershell` process in Task Manager.
-- **`Jiggle.ps1`** — the underlying script. Run directly for options:
+**Use it:**
 
+1. Copy `PeripheralCompanion.exe` onto your USB stick.
+2. Double-click it on the Windows 11 machine.
+3. It starts working immediately and silently. Nothing appears on screen.
+
+**Stop it:** open Task Manager, find `PeripheralCompanion.exe`, and click
+**End task**. (Running it a second time does nothing — only one copy runs.)
+
+**Defaults:** presses the invisible F15 key every 60 seconds, skips a cycle
+while you are actively using the machine, and asks Windows not to sleep or blank
+the display.
+
+**Optional configuration:** place a file named `settings.json` next to the
+`.exe` to change behavior. It travels with the stick; nothing is written to the
+host user profile. Example:
+
+```json
+{
+  "Mode": "Invisible",
+  "IntervalSeconds": 60,
+  "RespectUserActivity": true,
+  "KeepDisplayAwake": true,
+  "AutoStart": true
+}
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File .\Jiggle.ps1 -Mode Mouse -IntervalSeconds 30 -RespectActivity
-```
 
-**Parameters**
+- `Mode`: `"Invisible"` (F15 key, nothing visible) or `"MouseNudge"` (moves the
+  cursor one pixel and back).
+- `IntervalSeconds`: seconds between jiggles.
+- `RespectUserActivity`: `true` = stay out of the way while you are active.
+- `KeepDisplayAwake`: `true` = also prevent sleep and screen blanking.
 
-- `-IntervalSeconds <n>` — seconds between jiggles (default `60`).
-- `-Mode Invisible|Mouse` — `Invisible` presses the F15 key (nothing moves
-  on screen); `Mouse` nudges the cursor one pixel and returns it. Default
-  `Invisible`.
-- `-RespectActivity` — skip a cycle if you moved the mouse or typed within the
-  interval, so it never fights you.
+### Rebuilding it yourself
 
-No installation, no admin rights, no files written to the host beyond the stick.
-
----
-
-## B. Tray app (single portable .exe)
-
-The `src/PeripheralCompanion/` project is a Windows Forms system-tray app. Build
-it once on any Windows 11 machine with the
-[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), then copy the
-resulting single `.exe` to your USB stick.
+The prebuilt file is produced from `src/PeripheralCompanion/`. To rebuild on a
+machine with the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0):
 
 ```
 build\publish.cmd
@@ -62,66 +72,53 @@ or
 powershell -ExecutionPolicy Bypass -File build\publish.ps1
 ```
 
-Output: **`build\dist\PeripheralCompanion.exe`** — a self-contained, single-file
-executable. No .NET runtime needs to be installed on the machine that runs it.
+Output: **`build\dist\PeripheralCompanion.exe`**.
 
-### Using it
+---
 
-Double-click `PeripheralCompanion.exe`. A mouse-shaped icon appears in the
-system tray. Right-click it for the menu:
+## B. Portable script (no build, visible control)
 
-- **Active** — start/stop (double-click the icon also toggles).
-- **Interval** — 30 s, 1 min, 2 min, or 5 min.
-- **Method** — Invisible (F15 key) or Mouse nudge (1 px).
-- **Pause while I'm using the PC** — only jiggles when genuinely idle.
-- **Keep display awake** — also asks Windows not to sleep or blank the screen.
-- **Start active on launch** — begin working the moment it opens.
-- **About**, **Exit**.
+Everything is in `portable/`. Copy that folder to the stick.
 
-Settings are saved to `settings.json` **next to the executable**, so your
-configuration travels on the stick and nothing is left in the host user
-profile.
+- **`Run-Visible.cmd`** — run in a console window you can watch and close to stop.
+- **`Run-Hidden.vbs`** — run silently with no window (stop via Task Manager).
+- **`Jiggle.ps1`** — the script. Options:
 
-To make it a true "plug and go" tool, place a shortcut to
-`PeripheralCompanion.exe` in the machine's `shell:startup` folder, or just
-launch it from the stick when needed.
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Jiggle.ps1 -Mode Mouse -IntervalSeconds 30 -RespectActivity
+```
+
+`-IntervalSeconds <n>`, `-Mode Invisible|Mouse`, `-RespectActivity`.
 
 ---
 
 ## How it works
 
-- **F15 key** (`Invisible` mode): F15 is a real virtual key that no physical
-  keyboard sends. Pressing it resets the Windows idle timer without moving the
-  cursor or affecting any application.
-- **Mouse nudge** (`Mouse` mode): moves the cursor one pixel and immediately
-  back via relative `SendInput` / `SetCursorPos`.
+- **F15 key** (`Invisible`): F15 is a real virtual key that no physical keyboard
+  sends. Pressing it resets the Windows idle timer without moving the cursor or
+  affecting any application.
+- **Mouse nudge** (`MouseNudge` / `Mouse`): moves the cursor one pixel and back.
 - **Idle-aware**: uses `GetLastInputInfo` to detect real activity and stays out
   of the way when you are actually using the machine.
-- **Stay-awake**: uses `SetThreadExecutionState` to optionally keep the display
-  and system from sleeping.
+- **Stay-awake**: uses `SetThreadExecutionState` to keep the display and system
+  from sleeping.
 
 ## Layout
 
 ```
-portable/                 Zero-build PowerShell version
-  Jiggle.ps1
-  Run-Visible.cmd
-  Run-Hidden.vbs
-src/PeripheralCompanion/   Windows Forms tray app (C#, .NET 8)
-  Program.cs
-  TrayApplicationContext.cs
-  JiggleEngine.cs
-  NativeMethods.cs
-  Settings.cs
-  app.manifest
-  PeripheralCompanion.csproj
+src/PeripheralCompanion/   Headless background jiggler (C#, .NET 8, no UI)
+  Program.cs                 Entry point; single-instance; hidden message loop
+  JiggleEngine.cs            Timer + input logic
+  NativeMethods.cs           Win32 P/Invoke
+  Settings.cs                Optional portable settings.json
+  app.manifest               asInvoker; no elevation
+  PeripheralCompanion.csproj Single-file, self-contained, win-x64
 build/                     Publish scripts -> build/dist/PeripheralCompanion.exe
-  publish.cmd
-  publish.ps1
+portable/                  Zero-build PowerShell version
 ```
 
 ## Requirements
 
-- Windows 11 (also works on Windows 10).
-- Portable script: Windows PowerShell 5.1 (built into Windows) — no install.
-- Tray app: .NET 8 SDK to build; the published `.exe` needs nothing at runtime.
+- Windows 11 (also works on Windows 10, 64-bit).
+- Compiled `.exe`: nothing at runtime; .NET 8 SDK only if you rebuild.
+- Portable script: Windows PowerShell 5.1 (built into Windows).

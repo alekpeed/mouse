@@ -7,6 +7,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <!-- Allow cross-compiling this Windows Forms app on non-Windows build hosts. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
 
     <!-- Product identity: presents as a generic peripheral tray utility. -->
     <AssemblyName>PeripheralCompanion</AssemblyName>
