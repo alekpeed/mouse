@@ -1,0 +1,12 @@
+# .NET build output
+bin/
+obj/
+build/dist/
+*.user
+
+# Portable runtime settings written next to the executable
+settings.json
+
+# OS cruft
+.DS_Store
+Thumbs.db
